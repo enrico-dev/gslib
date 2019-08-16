@@ -111,7 +111,7 @@ endif()
 
 # USREXIT
 if(NBC)
-  target_compile_definitions(libgs PRIVATE -DNBC)
+  target_compile_definitions(libgs PRIVATE -DUSE_NBC)
 endif()
 
 # BLAS
