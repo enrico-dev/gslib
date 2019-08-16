@@ -1,40 +1,42 @@
 language: c
+sudo: required
+dist: xenial
+addons:
+  apt:
+    packages:
+      - gfortran
+      - mpich
+      - libmpich-dev
+    config:
+      retries: true
 
-before_install: 
-   - export ROOT_DIR=`pwd`
-   - sudo apt-get update -qq
-   - sudo apt-get install -y mpich2 libmpich2-dev 
+matrix:
+  include:
+    - env: TEST=crystal_test
+    - env: TEST=findpts_el_2_test
+    - env: TEST=findpts_el_2_test2
+    - env: TEST=findpts_el_3_test
+    - env: TEST=findpts_el_3_test2
+    - env: TEST=findpts_el_2_test2
+    - env: TEST=findpts_local_test
+    - env: TEST=findpts_test
+    - env: TEST=gs_test
+    - env: TEST=gs_test_gop_nonblocking
+    - env: TEST=gs_test_gop_blocking
+    - env: TEST=gs_unique_test
+    - env: TEST=lob_bnd_test
+    - env: TEST=obbox_test
+    - env: TEST=poly_test
+    - env: TEST=sarray_sort_test
+    - env: TEST=sarray_transfer_test
+    - env: TEST=sort_test
+    - env: TEST=sort_test2
 
-env:
-  matrix:
-    - TEST=comm_test             NP=2
-    - TEST=crs_test              NP=2
-    - TEST=crystal_test          NP=2
-    - TEST=findpts_el_2_test     NP=2
-    - TEST=findpts_el_2_test2    NP=2
-    - TEST=findpts_el_3_test     NP=2
-    - TEST=findpts_el_3_test2    NP=2
-    - TEST=findpts_el_2_test2    NP=2
-    - TEST=findpts_local_test    NP=2
-    - TEST=findpts_test          NP=2
-    - TEST=gs_test               NP=2
-    - TEST=gs_test_old           NP=2
-    - TEST=gs_unique_test        NP=2
-    - TEST=lob_bnd_test          NP=2
-    - TEST=obbox_test            NP=2
-    - TEST=poly_test             NP=2
-    - TEST=poly_test2            NP=2
-    - TEST=sarray_sort_test      NP=2
-    - TEST=sarray_transfer_test  NP=2
-    - TEST=sort_test             NP=2
-    - TEST=sort_test2            NP=2
-    - TEST=spchol_test           NP=2
-    - TEST=xxt_test              NP=3
-    - TEST=xxt_test2             NP=2
-
-install: true
+install:
+  - mkdir -p build
+  - cd build
+  - cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_Fortran_COMPILER=mpif90 -DNBC=on ..
+  - make ${TEST}
 
 script:
-  - cd $ROOT_DIR
-  - make CC=mpicc tests/$TEST
-  - mpiexec -np $NP ./tests/$TEST
+  - mpirun -np 2 ./${TEST}

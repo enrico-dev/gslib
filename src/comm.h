@@ -8,6 +8,8 @@
      "gs_defs.h"           for comm_allreduce, comm_scan, comm_reduce_T
 */
 
+#include <assert.h>
+#include <string.h>
 #if !defined(FAIL_H) || !defined(TYPES_H)
 #warning "comm.h" requires "fail.h" and "types.h"
 #endif
@@ -71,9 +73,10 @@ typedef int comm_req;
 typedef int MPI_Fint;
 #endif
 
-#define comm_allreduce PREFIXED_NAME(comm_allreduce)
-#define comm_scan      PREFIXED_NAME(comm_scan     )
-#define comm_dot       PREFIXED_NAME(comm_dot      )
+#define comm_allreduce  PREFIXED_NAME(comm_allreduce )
+#define comm_iallreduce PREFIXED_NAME(comm_iallreduce)
+#define comm_scan       PREFIXED_NAME(comm_scan      )
+#define comm_dot        PREFIXED_NAME(comm_dot       )
 
 /* global id, np vars strictly for diagnostic messages (fail.c) */
 #ifndef comm_gbl_id
@@ -102,11 +105,17 @@ static void comm_irecv(comm_req *req, const struct comm *c,
 static void comm_isend(comm_req *req, const struct comm *c,
                        void *p, size_t n, uint dst, int tag);
 static void comm_wait(comm_req *req, int n);
-
-double comm_dot(const struct comm *comm, double *v, double *w, uint n);
+static void comm_bcast(const struct comm *c, void *p, size_t n,
+		       uint root);
+double comm_dot(const struct comm *comm, double *v, double *w,
+		uint n);
+static void comm_gather(const struct comm *c, void *out, size_t out_n,
+		        void *in, size_t in_n, uint root);
 
 #ifdef GS_DEFS_H
 void comm_allreduce(const struct comm *com, gs_dom dom, gs_op op,
+                          void *v, uint vn, void *buf);
+void comm_iallreduce(comm_req *req, const struct comm *com, gs_dom dom, gs_op op,
                           void *v, uint vn, void *buf);
 void comm_scan(void *scan, const struct comm *com, gs_dom dom, gs_op op,
                const void *v, uint vn, void *buffer);
@@ -253,4 +262,14 @@ static void comm_bcast(const struct comm *c, void *p, size_t n, uint root)
 #endif
 }
 
+static void comm_gather(const struct comm *c, void *out, size_t out_n,
+		void *in, size_t in_n, uint root)
+{
+#ifdef MPI
+  MPI_Gather(out,out_n,MPI_UNSIGNED_CHAR,in,in_n,MPI_UNSIGNED_CHAR,root,c->c);
+#else
+  assert(out_n == in_n);
+  memcpy(in,out,out_n);
+#endif
+}
 #endif

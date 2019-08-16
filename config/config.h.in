@@ -1,0 +1,7 @@
+#cmakedefine MPI
+#cmakedefine UNDERSCORE
+#cmakedefine GLOBAL_LONG_LONG
+#cmakedefine PREFIX @PREFIX@
+#cmakedefine FPREFIX @FPREFIX@
+#cmakedefine USE_NAIVE_BLAS
+

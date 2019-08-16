@@ -1,13 +1,10 @@
 cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
 project(gslib C Fortran)
 
-enable_testing()
-
 # =============================================================================
-# Sources and Targets
+# Library target
 # =============================================================================
 
-# Adds gslib sources/target
 set(gs_sources
     src/comm.c
     src/crystal.c
@@ -18,15 +15,11 @@ set(gs_sources
     src/sarray_transfer.c
     src/sort.c
     src/tensor.c)
-set(xxt_sources
-    src/sparse_cholesky.c
-    src/xxt.c)
-set(amg_sources
-    src/amg.c)
+
 set(fwrapper_sources
-    src/fcrs.c
     src/fcrystal.c
     src/findpts.c)
+
 set(intp_sources
     src/findpts_el_2.c
     src/findpts_el_3.c
@@ -37,62 +30,101 @@ set(intp_sources
 
 add_library(libgs
     ${gs_sources}
-    ${xxt_sources}
-    ${amg_sources}
     ${fwrapper_sources}
-    ${intp_sources}
-    src/rand_elt_test.c)
+    ${intp_sources})
 set_target_properties(libgs PROPERTIES OUTPUT_NAME gs)
+target_include_directories(libgs PUBLIC src ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(libgs PUBLIC m)
 
 # =============================================================================
-# Headers
+# Test targets
 # =============================================================================
 
-target_include_directories(libgs PUBLIC src)
+foreach(test
+    comm_test
+    crystal_test
+    findpts_el_2_test
+    findpts_el_2_test2
+    findpts_el_3_test
+    findpts_el_3_test2
+    findpts_local_test
+    findpts_test
+    gs_test
+    gs_test_gop_blocking
+    gs_test_gop_nonblocking
+    gs_unique_test
+    lob_bnd_test
+    obbox_test
+    poly_test
+    sarray_sort_test
+    sarray_transfer_test
+    sort_test
+    sort_test2)
+  add_executable(${test} tests/${test}.c)
+  target_include_directories(${test} PUBLIC src tests ${CMAKE_CURRENT_BINARY_DIR})
+  target_link_libraries(${test} PUBLIC libgs m)
+endforeach()
+
+add_executable(f-igs tests/fortran/f-igs.f)
+target_include_directories(f-igs PUBLIC src tests ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(f-igs PUBLIC libgs)
 
 # =============================================================================
 # Preprocessor Symbols
 # =============================================================================
 
+# MPI
 if(MPI OR NOT DEFINED MPI)
   set(MPI TRUE)
   target_compile_definitions(libgs PRIVATE -DMPI)
 endif()
 
-if(MPI AND NOT NOMPIIO)
-  target_compile_definitions(libgs PRIVATE -DUSEMPIIO)
-endif()
-
+# UNDERSCORE
 include(FortranCInterface)
 FortranCInterface_VERIFY()
 if(FortranCInterface_GLOBAL_SUFFIX STREQUAL "_")
+  set(UNDERSCORE TRUE)
   target_compile_definitions(libgs PRIVATE -DUNDERSCORE)
 endif()
-# set(CMAKE_Fortran_FORMAT "FIXED")
+set(CMAKE_Fortran_FORMAT "FIXED")
 
-if(BLAS)
-  target_compile_definitions(libgs PRIVATE -DUSE_CBLAS)
-else()
-  target_compile_definitions(libgs PRIVATE -DUSE_NAIVE_BLAS)
-endif()
+# GLOBAL_LONG_LONG
+set(GLOBAL_LONG_LONG TRUE)
+target_compile_definitions(libgs PRIVATE -DGLOBAL_LONG_LONG)
 
-if(USREXIT)
-  target_compile_definitions(libgs PRIVATE -DUSE_USR_EXIT)
-endif()
-
+# PREFIX
 if(NOT DEFINED PREFIX)
   set(PREFIX gslib_)
 endif()
 target_compile_definitions(libgs PRIVATE -DPREFIX=${PREFIX})
 
+# FPREFIX
 if(NOT DEFINED FPREFIX)
   set(FPREFIX fgslib_)
 endif()
 target_compile_definitions(libgs PRIVATE -DFPREFIX=${FPREFIX})
 
-target_compile_definitions(libgs PRIVATE -DGLOBAL_LONG_LONG)
+# USREXIT
+if(USREXIT)
+  target_compile_definitions(libgs PRIVATE -DUSE_USR_EXIT)
+endif()
 
-# =============================================================================
+# USREXIT
+if(NBC)
+  target_compile_definitions(libgs PRIVATE -DUSE_NBC)
+endif()
 
-# For tests
-# include(tests/CMakeLists.txt)
+# BLAS
+if(BLAS)
+  target_compile_definitions(libgs PRIVATE -DUSE_CBLAS)
+else()
+  target_compile_definitions(libgs PRIVATE -DUSE_NAIVE_BLAS)
+  set(USE_NAIVE_BLAS TRUE)
+endif()
+
+# Debug
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  target_compile_definitions(libgs PRIVATE -DGSLIB_DEBUG)
+endif()
+
+configure_file(config/config.h.in config.h @ONLY)

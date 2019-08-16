@@ -1,10 +1,6 @@
-#include <stdlib.h>
+#ifndef RAND_ELT_TEST_H
+#define RAND_ELT_TEST_H
 #include <math.h>
-#include "c99.h"
-#include "types.h"
-#include "name.h"
-#include "poly.h"
-#include "lob_bnd.h"
 
 static double det_2(const double A[4]) { return A[0]*A[3]-A[1]*A[2]; }
 
@@ -167,3 +163,6 @@ void bubble_elt(double *x, double *y, double *z,
     z[(k*ns+j)*nr+i] = zt[k] + dz;
   }
 }
+
+
+#endif
