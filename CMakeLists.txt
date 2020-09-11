@@ -1,6 +1,28 @@
 cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
 project(gslib C Fortran)
 
+#===============================================================================
+# RPATH and install information
+#===============================================================================
+
+# This block of code ensures that dynamic libraries can be found via the RPATH
+# whether the executable is the original one from the build directory or the
+# installed one in CMAKE_INSTALL_PREFIX. Ref:
+# https://gitlab.kitware.com/cmake/community/wikis/doc/cmake/RPATH-handling
+
+# use, i.e. don't skip the full RPATH for the build tree
+set(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+# when building, don't use the install RPATH already
+# (but later on when installing)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
+# add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 # =============================================================================
 # Library target
 # =============================================================================
@@ -128,3 +150,14 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 configure_file(config/config.h.in config.h @ONLY)
+
+#################################################################################
+# Install targets
+#################################################################################
+
+install(TARGETS 
+  libgs
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
